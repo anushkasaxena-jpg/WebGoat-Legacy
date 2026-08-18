@@ -25,18 +25,17 @@ pipeline {
         }
         stage('Nexus IQ Scan'){
             steps {
-                script{                
+                script{
 
                         def policyEvaluation = nexusPolicyEvaluation (
-                                advancedProperties: '', 
-                                enableDebugLogging: false, 
-                                failBuildOnNetworkError: false, 
-                                failBuildOnScanningErrors: false, 
-                                iqApplication: selectedApplication('webgoat'), 
-                                iqInstanceId: 'nxiq', 
-                                iqScanPatterns: [[scanPattern: '**/*.war']], 
-                                iqStage: 'build', 
-                                jobCredentialsId: 'sonatype', 
+                                advancedProperties: '',
+                                enableDebugLogging: false,
+                                failBuildOnNetworkError: false,
+                                failBuildOnScanningErrors: false,
+                                iqApplication: selectedApplication('webgoat'),
+                                iqInstanceId: 'nxiq',
+                                iqScanPatterns: [[scanPattern: '**/*.war']],
+                                iqStage: 'build',
                                 reachability: [
                                     javaAnalysis: [
                                         enable: true
@@ -46,25 +45,23 @@ pipeline {
 
                         echo "Nexus IQ scan succeeded: ${policyEvaluation.applicationCompositionReportUrl}"
                         IQ_SCAN_URL = "${policyEvaluation.applicationCompositionReportUrl}"
-                    
+
                 }
             }
         }
+    // stage('Upload to Nexus') {
+    //         steps {
+    //             script {
+    //                     nexusPublisher nexusInstanceId: 'nxrm3',
+    //                     nexusRepositoryId: "maven-releases",
+    //                     packages: [[$class: 'MavenPackage',
+    //                         mavenAssetList: [[classifier: '', extension: 'war', filePath: "${ARTEFACT_NAME}"]],
+    //                         mavenCoordinate: [artifactId: 'WebGoat', groupId: 'org.demo', packaging: 'war', version: ${BUILD_VERSION}]]],
+    //                         tagName: "${BUILD_TAG}"
 
-        stage('Upload to Nexus') {
-            steps {
-                script {
-                        nexusPublisher nexusInstanceId: 'nxrm3',
-                        nexusRepositoryId: "maven-releases",
-                        packages: [[$class: 'MavenPackage',
-                            mavenAssetList: [[classifier: '', extension: 'war', filePath: "${ARTEFACT_NAME}"]],
-                            mavenCoordinate: [artifactId: 'WebGoat', groupId: 'org.demo', packaging: 'war', version: "${BUILD_VERSION}"]]],
-                            tagName: "${BUILD_TAG}"
+    //                 }
+    //         }
+    //     }
 
-                    }
-            }
-        }
-        
-    }
+    // }
 }
-
