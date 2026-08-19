@@ -10,7 +10,6 @@ pipeline {
         BUILD_VERSION = '6.0.1'
         ARTEFACT_NAME = "${WORKSPACE}/target/WebGoat-${BUILD_VERSION}.war"
         IQ_SCAN_URL = ""
-        BUILD_TAG = "webgoat-${BUILD_VERSION}"
     }
 
     stages {
@@ -70,8 +69,7 @@ pipeline {
                                 packaging: 'war',
                                 version: "${BUILD_VERSION}"
                             ]
-                        ]],
-                        tagName: "${BUILD_TAG}"
+                        ]]
                     )
                 }
             }
