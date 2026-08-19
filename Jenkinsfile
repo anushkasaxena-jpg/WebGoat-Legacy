@@ -7,8 +7,10 @@ pipeline {
     }
 
     environment {
+        BUILD_VERSION = '6.0.1'
         ARTEFACT_NAME = "${WORKSPACE}/target/WebGoat-${BUILD_VERSION}.war"
         IQ_SCAN_URL = ""
+        BUILD_TAG = "webgoat-${BUILD_VERSION}"
     }
 
     stages {
@@ -19,51 +21,60 @@ pipeline {
             post {
                 success {
                     echo 'Now archiving...'
-                    archiveArtifacts artifacts: "**/target/*.war"
-                }
-            }
-        }
-        stage('Nexus IQ Scan'){
-            steps {
-                script{
-
-                        def policyEvaluation = nexusPolicyEvaluation (
-                                advancedProperties: '',
-                                enableDebugLogging: false,
-                                failBuildOnNetworkError: false,
-                                failBuildOnScanningErrors: false,
-                                iqApplication: selectedApplication('webgoat'),
-                                iqInstanceId: 'nxiq',
-                                iqScanPatterns: [[scanPattern: '**/*.war']],
-                                iqStage: 'build',
-                                reachability: [
-                                    javaAnalysis: [
-                                        enable: true
-                                    ]
-                                ]
-                        )
-
-                        echo "Nexus IQ scan succeeded: ${policyEvaluation.applicationCompositionReportUrl}"
-                        IQ_SCAN_URL = "${policyEvaluation.applicationCompositionReportUrl}"
-
+                    archiveArtifacts artifacts: '**/target/*.war'
                 }
             }
         }
 
-        stage('Upload to Nexus') {
+        stage('Nexus IQ Scan') {
             steps {
                 script {
-                        nexusPublisher nexusInstanceId: 'nxrm3',
-                        nexusRepositoryId: "maven-releases",
-                        packages: [[$class: 'MavenPackage',
-                            mavenAssetList: [[classifier: '', extension: 'war', filePath: "${ARTEFACT_NAME}"]],
-                            mavenCoordinate: [artifactId: 'WebGoat', groupId: 'org.demo', packaging: 'war', version: "${BUILD_VERSION}"]]],
-                            tagName: "${BUILD_TAG}"
+                    def policyEvaluation = nexusPolicyEvaluation(
+                        advancedProperties: '',
+                        enableDebugLogging: false,
+                        failBuildOnNetworkError: false,
+                        failBuildOnScanningErrors: false,
+                        iqApplication: selectedApplication('webgoat'),
+                        iqInstanceId: 'nxiq',
+                        iqScanPatterns: [[scanPattern: '**/*.war']],
+                        iqStage: 'build',
+                        reachability: [
+                            javaAnalysis: [
+                                enable: true
+                            ]
+                        ]
+                    )
 
-                    }
+                    echo "Nexus IQ scan succeeded: ${policyEvaluation.applicationCompositionReportUrl}"
+                    env.IQ_SCAN_URL = policyEvaluation.applicationCompositionReportUrl
+                }
             }
         }
-        
+
+        stage('Publish to Repo') {
+            steps {
+                script {
+                    nexusPublisher(
+                        nexusInstanceId: 'nxrm3',
+                        nexusRepositoryId: 'maven-releases',
+                        packages: [[
+                            $class: 'MavenPackage',
+                            mavenAssetList: [[
+                                classifier: '',
+                                extension: 'war',
+                                filePath: "${ARTEFACT_NAME}"
+                            ]],
+                            mavenCoordinate: [
+                                artifactId: 'WebGoat',
+                                groupId: 'org.demo',
+                                packaging: 'war',
+                                version: "${BUILD_VERSION}"
+                            ]
+                        ]],
+                        tagName: "${BUILD_TAG}"
+                    )
+                }
+            }
+        }
     }
 }
-
